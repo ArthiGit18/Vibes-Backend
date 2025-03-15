@@ -13,9 +13,9 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({ origin: "*" })); // Allow all origins
 app.use(bodyParser.json());
 
-// Connect to MongoDB
+// Connect to MongoDB using the correct URI from .env
 mongoose
-  .connect("mongodb://127.0.0.1:27017/morningRoutineDB", {
+  .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
