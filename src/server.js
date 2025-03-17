@@ -24,8 +24,8 @@ mongoose
 
 // Create Mongoose Schema & Model
 const RoutineSchema = new mongoose.Schema({
-  email: String,
-  morningRoutine: Array,
+  email: { type: String, required: true },
+  morningRoutine: { type: Array, required: true },
   date: { type: Date, default: Date.now },
 });
 
@@ -44,8 +44,8 @@ const transporter = nodemailer.createTransport({
 app.post("/send-email", async (req, res) => {
   const { email, morningRoutine } = req.body;
 
-  if (!email || !morningRoutine) {
-    return res.status(400).json({ error: "Missing required fields" });
+  if (!email || !morningRoutine || !Array.isArray(morningRoutine)) {
+    return res.status(400).json({ error: "Missing or invalid required fields" });
   }
 
   try {
@@ -63,7 +63,7 @@ app.post("/send-email", async (req, res) => {
             <td>${item.name}</td>
             <td>${item.completed ? "Yes" : "No"}</td>
             <td>${item.notes || "N/A"}</td>
-            <td>${item.time}</td>
+            <td>${item.time || "N/A"}</td>
           </tr>`;
     });
 
@@ -92,6 +92,11 @@ app.get("/routines", async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: "Error fetching routines" });
   }
+});
+
+// Root Endpoint
+app.get("/", (req, res) => {
+  res.send("🚀 Railway Server Running Successfully");
 });
 
 // Start Server
