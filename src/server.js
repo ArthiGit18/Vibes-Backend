@@ -43,8 +43,10 @@ const transporter = nodemailer.createTransport({
 // API to Save Routine & Send Email
 app.post("/send-email", async (req, res) => {
   const { email, morningRoutine } = req.body;
+  console.log("📩 Incoming Request:", req.body); // Log Request
 
   if (!email || !morningRoutine || !Array.isArray(morningRoutine)) {
+    console.error("❌ Missing or invalid fields");
     return res.status(400).json({ error: "Missing or invalid required fields" });
   }
 
@@ -52,11 +54,11 @@ app.post("/send-email", async (req, res) => {
     // Save to Database
     const newRoutine = new Routine({ email, morningRoutine });
     await newRoutine.save();
+    console.log("✅ Routine Saved to Database");
 
     // Email Content
     let emailContent = `<h2>Morning Routine Summary</h2>`;
-    emailContent += `<p>Date: ${new Date().toLocaleString()}</p>`;
-    emailContent += `<table border="1" cellpadding="5"><tr><th>Activity</th><th>Completed</th><th>Notes</th><th>Time</th></tr>`;
+    emailContent += `<table border="1"><tr><th>Activity</th><th>Completed</th><th>Notes</th><th>Time</th></tr>`;
 
     morningRoutine.forEach((item) => {
       emailContent += `<tr>
@@ -69,6 +71,8 @@ app.post("/send-email", async (req, res) => {
 
     emailContent += `</table>`;
 
+    console.log("📧 Sending email to:", email);
+
     // Send Email
     await transporter.sendMail({
       from: process.env.GMAIL_USER,
@@ -77,9 +81,10 @@ app.post("/send-email", async (req, res) => {
       html: emailContent,
     });
 
+    console.log("✅ Email Sent Successfully!");
     res.json({ success: "Email sent and routine saved successfully!" });
   } catch (error) {
-    console.error("❌ Error:", error);
+    console.error("❌ Error in send-email:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
