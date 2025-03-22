@@ -1,16 +1,32 @@
 require("dotenv").config();
 const express = require("express");
-const cors = require("cors");
+const cors = require("cors"); // Ensure CORS is enabled if calling from frontend
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+const path = require("path");
+
+// Import Routes
+const healthyFoodRoutes = require("./routes/healthyFood");
+const faceHairCareRoutes = require("./routes/faceHairCare"); // New Route
+const bodyCareRoutes = require("./routes/bodyCare");
+const routineRoutes = require("./routes/routineTracker");
+
 
 // Initialize Express App
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors({ origin: "*" })); // Allow all origins
+app.use(cors({ origin: "*" }));
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Serve Static Images
+app.use("/images", express.static(path.join(__dirname, "public/images")));
+app.use("/face_hair_care", express.static(path.join(__dirname, "public/face_hair_care"))); // New Image Folder
+app.use("/uploads", express.static("uploads"));
+app.use("/api", routineRoutes);
+app.use("/api/routine", routineRoutes);
 
 // Connect to MongoDB
 mongoose
@@ -21,77 +37,11 @@ mongoose
   .then(() => console.log("✅ Connected to MongoDB"))
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
-// Create Mongoose Schema & Model
-const routineSchema = new mongoose.Schema({
-  morningRoutine: Array,
-  date: { type: String, required: true, unique: true }, // Store date as string (YYYY-MM-DD)
-});
+// Use Routes
+app.use("/api/food", healthyFoodRoutes);
+app.use("/api/face-hair-care", faceHairCareRoutes); // New API Route
+app.use("/api/body-care", bodyCareRoutes);
 
-const Routine = mongoose.model("Routine", routineSchema);
-
-app.post("/save-routine", async (req, res) => {
-  const { morningRoutine } = req.body;
-  const todayDate = new Date().toISOString().split("T")[0]; // Get YYYY-MM-DD format
-
-  try {
-    const existingRoutine = await Routine.findOne({ date: todayDate });
-
-    if (existingRoutine) {
-      return res.status(400).json({ error: "Today's routine has already been entered!" });
-    }
-
-    const newRoutine = new Routine({ morningRoutine, date: todayDate });
-    await newRoutine.save();
-
-    res.json({ success: "Routine saved successfully!" });
-  } catch (error) {
-    console.error("Error in save-routine:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-// API to Get All Saved Routines
-app.get("/routines", async (req, res) => {
-  try {
-    const routines = await Routine.find().sort({ date: -1 });
-    res.json(routines);
-  } catch (error) {
-    console.error("❌ Error fetching routines:", error);
-    res.status(500).json({ error: "Error fetching routines" });
-  }
-});
-
-// API to List Routines with Formatted Date & Time
-app.get("/list", async (req, res) => {
-  try {
-    const routines = await Routine.find().sort({ date: -1 });
-
-    // Format response to include ID, Date, and Time
-    const formattedRoutines = routines.map((routine) => ({
-      id: routine._id,
-      email: routine.email,
-      date: routine.date.toISOString().split("T")[0], // Extracting only YYYY-MM-DD
-      time: routine.date.toTimeString().split(" ")[0], // Extracting HH:MM:SS
-      morningRoutine: routine.morningRoutine,
-    }));
-
-    res.json(formattedRoutines);
-  } catch (error) {
-    console.error("❌ Error fetching routines:", error);
-    res.status(500).json({ error: "Error fetching routines" });
-  }
-});
-
-app.get("/tracker-summary", async (req, res) => {
-  try {
-    const routines = await Routine.find({}, "date"); // Fetch only the date field
-    const completedDates = routines.map((routine) => routine.date); // Extract dates
-
-    res.json({ completedDates });
-  } catch (error) {
-    console.error("❌ Error fetching tracker summary:", error);
-    res.status(500).json({ error: "Error fetching tracker summary" });
-  }
-});
 
 // Root Endpoint
 app.get("/", (req, res) => {
