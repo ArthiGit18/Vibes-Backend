@@ -1,4 +1,5 @@
 require("dotenv").config();
+require("dotenv").config({ path: "./.env" });
 const express = require("express");
 const cors = require("cors"); // Ensure CORS is enabled if calling from frontend
 const bodyParser = require("body-parser");
@@ -10,6 +11,10 @@ const healthyFoodRoutes = require("./routes/healthyFood");
 const faceHairCareRoutes = require("./routes/faceHairCare"); // New Route
 const bodyCareRoutes = require("./routes/bodyCare");
 const routineRoutes = require("./routes/routineTracker");
+const authRoutes = require("./routes/auth");
+const emailRoute = require("./routes/testmail");
+
+
 
 
 // Initialize Express App
@@ -22,11 +27,13 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Serve Static Images
+app.use("/api", emailRoute);
 app.use("/images", express.static(path.join(__dirname, "public/images")));
 app.use("/face_hair_care", express.static(path.join(__dirname, "public/face_hair_care"))); // New Image Folder
 app.use("/uploads", express.static("uploads"));
 app.use("/api", routineRoutes);
 app.use("/api/routine", routineRoutes);
+app.use("/api/auth", authRoutes);
 
 // Connect to MongoDB
 mongoose

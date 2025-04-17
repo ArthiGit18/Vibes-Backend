@@ -29,9 +29,12 @@ const healthyFoodSchema = new mongoose.Schema({
     name: { type: String, required: true, unique: true },
     description: { type: String, required: true },
     making: { type: String, required: true }, // HTML format content
-    chart: { type: String, required: true }, // HTML format content
+    ingredient: { type: String, required: true }, // HTML format content
+    nutritionChart: { type: String, required: true }, // HTML format content
+    benifits: { type: String, required: true }, // HTML format content
     image: { type: String, required: true }, // Store the image file path
-    context: { type: Number, required: true },
+    vegNonveg: { type: Number, required: true },
+    mldj: { type: Number, required: true },
     createdAt: { type: Date, default: Date.now }
 });
 
@@ -40,24 +43,38 @@ const HealthyFood = mongoose.model("HealthyFood", healthyFoodSchema);
 // 📌 Create a New Healthy Food Item (With Image Upload)
 router.post("/create", upload.single("image"), async (req, res) => {
     try {
-        const { name, description, making, chart, context } = req.body;
+        const { name, description, making, nutritionChart, ingredient, benifits, vegNonveg, mldj } = req.body;
         const imagePath = req.file ? `/images/${req.file.filename}` : null;
 
         if (!imagePath) {
             return res.status(400).json({ error: "Image upload is required!" });
         }
 
-        
-      if (!context || isNaN(context)) {
-        return res.status(400).json({ error: "Context must be a number!" });
-      }
+        if (!vegNonveg || isNaN(vegNonveg)) {
+            return res.status(400).json({ error: "VegNonveg must be a number!" });
+        }
+
+        if (!mldj || isNaN(mldj)) {
+            return res.status(400).json({ error: "Mldj must be a number!" });
+        }
 
         const existingFood = await HealthyFood.findOne({ name });
         if (existingFood) {
             return res.status(400).json({ error: "Food item already exists!" });
         }
 
-        const newFood = new HealthyFood({ name, description, making, chart, image: imagePath, context: Number(context) });
+        const newFood = new HealthyFood({ 
+            name, 
+            description, 
+            making, 
+            nutritionChart, 
+            ingredient,
+            benifits,
+            image: imagePath, 
+            vegNonveg: Number(vegNonveg),
+            mldj: Number(mldj) 
+        });
+
         await newFood.save();
 
         res.json({ success: "Food item added successfully!", data: newFood });
@@ -67,24 +84,39 @@ router.post("/create", upload.single("image"), async (req, res) => {
     }
 });
 
+
 // 📌 Update an Existing Food Item (With Image Upload)
 router.put("/update/:id", upload.single("image"), async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, description, making, chart, context } = req.body;
+        const { name, description, making, nutritionChart, ingredient, benifits, vegNonveg, mldj } = req.body;
         let imagePath;
 
         if (req.file) {
             imagePath = `/images/${req.file.filename}`;
         }
 
-        if (context && isNaN(context)) {
-            return res.status(400).json({ error: "Context must be a number!" });
-          }
-      
+        if (vegNonveg && isNaN(vegNonveg)) {
+            return res.status(400).json({ error: "VegNonveg must be a number!" });
+        }
+
+        if (mldj && isNaN(mldj)) {
+            return res.status(400).json({ error: "Mldj must be a number!" });
+        }
+
         const updatedFood = await HealthyFood.findByIdAndUpdate(
             id,
-            { name, description, making, chart, ...(imagePath && { image: imagePath }), context: Number(context)  },
+            { 
+                name, 
+                description, 
+                making, 
+                nutritionChart, 
+                ingredient,
+                benifits,
+                ...(imagePath && { image: imagePath }), 
+                vegNonveg: Number(vegNonveg),
+                mldj: Number(mldj)
+            },
             { new: true }
         );
 
@@ -98,6 +130,7 @@ router.put("/update/:id", upload.single("image"), async (req, res) => {
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
+
 
 // 📌 List All Healthy Food Items
 router.get("/list", async (req, res) => {
@@ -130,6 +163,19 @@ router.delete("/delete/:id", async (req, res) => {
     } catch (error) {
         console.error("❌ Error deleting food item:", error);
         res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+router.get("/details/:id", async (req, res) => {
+    try {
+        const foodItem = await HealthyFood.findById(req.params.id);
+        if (!foodItem) {
+            return res.status(404).json({ error: "Food item not found" });
+        }
+        res.json(foodItem);
+    } catch (error) {
+        console.error("❌ Error fetching food details:", error);
+        res.status(500).json({ error: "Error fetching food details" });
     }
 });
 
